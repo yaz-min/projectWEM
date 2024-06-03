@@ -1,0 +1,294 @@
+---
+title: "Sesion2_Actividad"
+output:
+  html_document:
+    slidy_presentation: default
+    ioslides_presentation:
+      widescreen: true
+  github_document:
+  pdf_document: default
+date: "2024-02-05"
+---
+
+## Chunk de carga de paquetes, definición de variables, etc.
+
+
+```{r entorno}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+
+library(coronavirus)
+library(tidyverse)
+library(plotly)
+library(DT)
+library(kableExtra)
+
+casos <- coronavirus::coronavirus
+```
+
+## Antecedentes
+
+Se empieza definiendo un poco de contexto en 3 párrafos:
+
+* ¿Qué es el COVID19? Es un virus, de la familia de virus "Coronavirus", recibe su nombre por su forma en "corona". Dicho virus se puede transmitir de 3 formas: 
+  1.- Inhalar aire que contenga gotitas de salida emitida de personas enfermas al toser, estornudar o hablar.
+  2.- Estar cerca de personas infectadas.
+  3.- A través de superficies. Al tocarse los ojos, nariz o boca después de haber tocado superficies contaminadas.
+Alguno de los síntomas, son:
+  Tos, Dolor de cabeza, Fiebre.
+Los cuales pueden venir acompañados de alguno de los siguientes:
+  Dolor muscular y de articulaciones, Dolor de garganta, Escalofrios, Escurrimiento nasal, Perdida del olfato y/o del gusto.
+En los casos graves puede presentarse:
+  Dificultad para respirar, Dolor en el pecho.
+  
+* ¿Cuál fue la situación en México entre 2020 y 2022? El primer caso de COVID-19 se detectó a finales del mes de Febrero de 2020, 64 días despues de este primer diafnóstico, el numero de pacientes aumento exponencialmente, la cual alcanzo un total de 19.224 casos confirmados. El papel fundamental para evitar el incremento de contagios fue mantener las medidas de higiene de las que se encuentran:
+  1.- Lavado de manos
+  2.- Estornudo de etiqueta
+  3.- Sana distancia
+  4.- Uso correcto de cubrebocas
+
+* ¿Cuál es el contexto de los datos que estamos usando? El paquete de Coronavirus nos proporciona un conjunto de datos de COVID-19 recopilados por el Centro de Ciencia e Ingenieria de Sistemas (CSSE) de la Universidad Johns Hopkins, proporciona un resumen diario de los casos de COVID-19 por ubicación geográfica. En este conjunto de datos observamos casos  nuevos y de recuperación hasta agosto de 2022
+
+## Materiales y métodos
+
+Se empieza por citar la fuente de los datos:
+
+* Se recomienda revisar el github del autor del paquete [https://github.com/RamiKrispin/coronavirus] para acceder a los detalles de los datos. También se puede probar con ??coronavirus en RStudio.
+
+### Ecuaciones usadas para medir el impacto de una enfermedad
+La incidencia, la cual nos indica la frecuencia con que ocurren nuevos eventos. Ademas de indicarnos el volumen final de casos nuevos aparecidos durante el seguimiento, nos permite establecer relaciones de causa-efecto entre determinadas caracteristicas de la poblacion y enfermedades especificas.
+Se define como "el potencial instantáneo de cambio en el estado de la salud por unidad de tiempo, durante un periodo específico, en relación con el tamaño de la población susceptible en el mismo periodo". 
+El calculo del denominador de la Tasa de Incidencia se realiza sumando los tiempos libres de enfermedad de cada uno de los individuos que conforman el grupo y que pertenece en el estudio durante esl periodo. E ste número se mide generalmente en años, y se conoce como tiempo en riesgo o tiempo-persona.
+
+
+* $TasaDeIncidencia = NuevosCasos / Población \times 100,000$
+
+* $TasaDeMortalidad = Defunciones / Población \times 100,000$
+
+## Resultados
+
+* Nuevos casos confirmados en el tiempo (línea de tiempo sobre casos a nivel mundial).
+
+```{r confimados_mundial}
+casos |> 
+  # filtra tipo de dato que se quiere ver
+  filter(type == "confirmed") |> 
+  # agrupar con dplyr para poder resumir los datos
+  group_by(date) |> 
+  summarise(casos = sum(cases, na.rm = TRUE)) |> 
+  # graficar con ggplot
+  ggplot(aes(x = date, y = casos))+
+  geom_line()+
+  labs(title = "Nuevos casos confirmados a nivel mundial",
+       x = "Fecha",
+       y = "# de nuevos casos")
+```
+
+* Acumulativo de nuevos casos confirmados en el tiempo.
+
+```{r casos_confirmados_acumulado}
+# guardar los datos de nuevos casos
+temp1 <- casos |> 
+  # filtrar tipo de datos que se quieren ver
+  filter(type == "confirmed") |> 
+  # agrupar para resumir
+  group_by(date) |> 
+  summarise(casos = sum(cases, na.rm = TRUE))
+
+# agregar columna de datos acumulativos
+temp1$acumulado = cumsum(temp1$casos)
+
+# graficar
+temp1 |> 
+  ggplot(aes(x = date, y = acumulado))+
+  geom_line()+
+  labs(title = "Acumulativo de nuevos casos confirmados",
+       x = "Fecha",
+       y = "# de nuevos casos")
+
+```
+
+* Defunciones reportadas a nivel mundial.
+
+```{r defunciones_mundial}
+casos |> 
+  # filtra tipo de dato que se quiere ver
+  filter(type == "death") |> 
+  # agrupar con dplyr para poder resumir los datos
+  group_by(date) |> 
+  summarise(casos = sum(cases, na.rm = TRUE)) |> 
+  # graficar con ggplot
+  ggplot(aes(x = date, y = casos))+
+  geom_line()+
+  labs(title = "Defunciones a nivel mundial",
+       x = "Fecha",
+       y = "# de defunciones")
+```
+
+
+* Defunciones acumuladas a nivel mundial
+
+```{r defunciones_acumuladas_mundial}
+temp1 <- casos |> 
+  # filtrar tipo de datos que se quieren ver
+  filter(type == "death") |> 
+  # agrupar para resumir
+  group_by(date) |> 
+  summarise(casos = sum(cases, na.rm = TRUE))
+
+# agregar columna de datos acumulativos
+temp1$acumulado = cumsum(temp1$casos)
+
+# graficar
+temp1 |> 
+  ggplot(aes(x = date, y = acumulado))+
+  geom_line()+
+  labs(title = "Acumulativo de defunciones",
+       x = "Fecha",
+       y = "# de defunciones")
+```
+
+* Casos confirmados y defunciones en México (línea de tiempo sobre casos confirmados en México).
+
+```{r casos_mexico}
+temp_mx <- casos |> 
+  # filtrar tipo de datos que se quieren ver
+  filter(type != "recovery") |> 
+  filter(country == "Mexico") |> 
+  # agrupar para resumir
+  group_by(date, type) |> 
+  summarise(casos = sum(cases, na.rm = TRUE)) |> 
+  pivot_wider(names_from = "type", values_from = "casos")
+
+# agregar columna de datos acumulativos
+
+temp_mx$acumulado_confirmado = cumsum(temp_mx$confirmed)
+temp_mx$acumulado_muerte = cumsum(temp_mx$death)
+
+# graficar
+temp_mx |> 
+  pivot_longer(cols = c(confirmed:acumulado_muerte),
+               names_to = "Variable", values_to = "Cuenta") |> 
+  filter(Variable == "confirmed" | Variable == "death") |>
+  ggplot(aes(x = date, y = Cuenta, color = Variable))+
+  geom_line()+
+  labs(title = "Casos confirmados y defunciones en México",
+       x = "Fecha",
+       y = "# de casos")
+```
+
+* Casos acumulados en México.
+
+```{r defunciones_mexico}
+# graficar
+temp_mx |> 
+  pivot_longer(cols = c(confirmed:acumulado_muerte),
+               names_to = "Variable", values_to = "Cuenta") |> 
+  filter(Variable == "acumulado_confirmado" | Variable == "acumulado_muerte") |> 
+  ggplot(aes(x = date, y = Cuenta, color = Variable))+
+  geom_line()+
+  labs(title = "Casos confirmados y defunciones en México",
+       x = "Fecha",
+       y = "# de casos")
+```
+
+* Tasa de incidencia a nivel mundial por país, por año.
+  + Presentar la información en un datatable, para facilitar el acceso a los datos.
+
+```{r tasa_incidencia_mundial}
+T_Incidencia <- casos |> 
+  # filtrar tipo de datos 
+  filter(type == "confirmed") |> 
+  # agrupar para después resumir los datos
+  group_by(date, country) |> 
+  summarise(casos = sum(cases, na.rm = TRUE),
+            poblacion = sum(population, na.rm = TRUE)) |> 
+  # agregar columna de año
+  mutate(año = format(date, "%Y")) |> 
+  # deshacer los grupos anteriores para agrupar pero ahora por año
+  ungroup() |> 
+  group_by(año, country) |> 
+  summarise(casos = sum(casos, na.rm = TRUE),
+            poblacion = mean(poblacion, na.rm = TRUE)) |> 
+  # filtrar países con población 0, para evitar NaN e Infinitos
+  filter(poblacion > 0) |> 
+  # calcular tasa de incidencia
+  mutate(tasa_incidencia = casos / poblacion * 100000)
+
+DT::datatable(T_Incidencia)
+```
+
+* Tasa de mortalidad a nivel mundial por país
++ Presentar la información en un datatable, para facilitar el acceso a los datos.
+
+```{r tasa_mortalidad_mundial}
+T_Mortalidad <- casos |> 
+  # filtrar tipo de datos 
+  filter(type == "death") |> 
+  # agrupar para después resumir los datos
+  group_by(date, country) |> 
+  summarise(casos = sum(cases, na.rm = TRUE),
+            poblacion = sum(population, na.rm = TRUE)) |> 
+  # agregar columna de año
+  mutate(año = format(date, "%Y")) |> 
+  # deshacer los grupos anteriores para agrupar pero ahora por año
+  ungroup() |> 
+  group_by(año, country) |> 
+  summarise(casos = sum(casos, na.rm = TRUE),
+            poblacion = mean(poblacion, na.rm = TRUE)) |> 
+  # filtrar países con población 0, para evitar NaN e Infinitos
+  filter(poblacion > 0) |> 
+  # calcular tasa de mortalidad
+  mutate(tasa_mortalidad = casos / poblacion * 100000)
+
+DT::datatable(T_Mortalidad)
+```
+
+* Indicar valores de tasa de incidencia y mortalidad para México
+
+```{r tasa_incidencia_mexico}
+# filtrar información a nivel país
+T_Incidencia |> 
+  filter(country == "Mexico")
+```
+```{r tasa_mortalidad_mexico}
+# filtrar información a nivel país
+T_Mortalidad |> 
+  filter(country == "Mexico")
+```
+
+
+## Conclusiones
+
+* En conclusión, gracias a las graficas presentadas anteriormente, podemos deducir que la situación del COVID19 a finales del año 2021 a principios de 2022 hubo un disparo en el numero de casos nuevos confirmados a nivel mundial, sin embargo las estrategias sanitarias implementadas para la contención del COVID-19 fueron las adecuadas puesta que el numero de defunciones no aumento drasticamente como sus contagios, no obstante en el 2023 se observa un aumento significativo en el numero de defunciones a nimvel numdial. De igual manera se puede observar que durante el año 2022 hubo un aumento notable en casos confirmados en México.
+
+## Bibliografía
+
+* Coronavirus, Rami Krispin [GitHub](https://github.com/RamiKrispin/coronavirus)
+* Epidemología de COVID-19 en México, V. Suárez [Articulo](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7250750/#:~:text=El%20primer%20caso%20de%20COVID,27%20de%20febrero%20de%202020.)
+* ¿Qué es el SARS-CoV-2? [Coronavirus-gob.mx](https://coronavirus.gob.mx/covid-19/)
+
+
+# Pasos a seguir para subir el reporte a GitHub
+
+1. Crear el repositorio en la web de GitHub. Se puede sugerir un nombre como "visualizacion_COVID19".
+2. Copiar la URL del repositorio remoto.
+3. Pasar a la terminal en RStudio.
+4. Verificar que el directorio de trabajo coincida con el directorio en donde está el reporte. 
+5. Inicializar el repositorio local `git init`
+6. Añadir el archivo al área de preparación `git add Sesion2_Actividad.md`
+7. Confirmar los cambios `git commit -m "Se carga archivo de reporte"`
+8. Asignar un nombre de rama `git branch -M main`
+9. Conectar los repositorios local y remoto `git remote add origin https://github.com/xxxUsrNmxxx/visualizacion_COVID19.git`
+10. Llevar los cambios locales al repositorio remoto `git push -u origin main`
+
+> [Nota]
+
+> En caso de que RStudio no permita usar el nombre de usuario y contraseña para hacer la conexión remota se puede usar en vez de la contraseña un **Access token**. 
+
+> 1. En la página de GitHub hacer click en el ícono de perfil y luego en "Settings".
+> 2. En el menú del lado izquierdo, hacer click en la última opción "Developer settings".
+> 3. En el menú del lado izquierdo, hacer click en "Personal access tokens" y después en "Fine-grained tokens".
+> 4. Del lado derecho aparece el botón de "Generate new token", hacer click ahí y confirmar con contraseña.
+> 5. Se puede dar un nombre al token "Visualizacion COVID19", cambiar el tiempo de expiración a 90 días y agregar alguna descripción. En la sección de "Repository access" seleccionar la tercera opción "Only select repositories" y escoger el repo adecuado.
+> 6. Otorgar permisos adecuados. Para **Repository permissions** habilitar Actions, Administration, Commit statuses, Contents, Deployments, Environments, Metadata, Pages, Pull requests. Para **Account permissions** habilitar todo.
+> 7. Copiar el token generado y usarlo como contraseña cuándo se hace el push.
